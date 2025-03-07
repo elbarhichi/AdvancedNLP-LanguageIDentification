@@ -9,7 +9,7 @@ sentences = test_data["Text"].tolist()
 
 # 2. Configuration du modèle et du pipeline
 device = 0 if torch.cuda.is_available() else -1
-model_ckpt = "xlm-roberta-base-last/checkpoint-17000"
+model_ckpt = "models/xlm/xlm-roberta-base-last/checkpoint-17000"
 model_pipe = pipeline(
     "text-classification", model=model_ckpt, device=device, batch_size=64
 )

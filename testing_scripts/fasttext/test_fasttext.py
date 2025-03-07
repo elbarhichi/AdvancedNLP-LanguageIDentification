@@ -26,7 +26,7 @@ def clean_text(text):
 test_data['Text'] = test_data['Text'].apply(clean_text)
 
 # 3. Charger le modèle fastText sauvegardé
-model = fasttext.load_model("fasttext_language_classifier_best.bin")
+model = fasttext.load_model("results_fasttext/fasttext_language_classifier_best.bin")
 
 # 4. Faire des prédictions pour chaque texte
 predicted_labels = []

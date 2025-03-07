@@ -29,7 +29,7 @@ test_data['Text'] = test_data['Text'].apply(clean_text)
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
 
 # Chemin vers le modèle sauvegardé
-model_path = "results_xlmroberta_9/checkpoint-162904"
+model_path = "models/xlm/results_xlmroberta_9/checkpoint-162904"
 
 # Charger le tokenizer et le modèle
 tokenizer = AutoTokenizer.from_pretrained(model_path)
