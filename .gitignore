@@ -169,3 +169,14 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+models
+results
+results_rembert
+results_mt5_base
+results_mdeberta_base
+results_xlmroberta_9
+xlmroberta_language_classifier9
+xlm-roberta-base-last
+results_fasttext
+predictions2

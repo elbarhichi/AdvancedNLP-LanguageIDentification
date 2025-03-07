@@ -1,3 +1,11 @@
 pandas 
 re
 unicodedata
+csv
+fasttext
+scikit-learn
+numpy
+joblib
+datasets
+transformers
+torch
