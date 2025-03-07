@@ -5,29 +5,26 @@ from sklearn.linear_model import SGDClassifier
 import joblib
 from sklearn.metrics import accuracy_score
 
-# Chargement du CSV contenant les données prétraitées
-# On suppose ici que la colonne "Text" contient le texte nettoyé
-# et que la colonne "Label" contient le label (code langue)
 df = pd.read_csv('data/train_submission_cleaned.csv')
 
-# Vérification rapide de la distribution des classes
+# Quick check of the class distributions
 print("Distribution des langues dans le dataset:")
 print(df['Label'].value_counts())
 
-# Séparation en ensemble d'entraînement et de validation (stratifié sur le label)
+# Train / Test split
 train_df, val_df = train_test_split(df, test_size=0.1, stratify=df['Label'], random_state=42)
 
-# Création d'un vecteur TF-IDF avec des n-grammes de caractères (par exemple 2 à 4 caractères)
+# TF-IDF
 vectorizer = TfidfVectorizer(analyzer='char', ngram_range=(2, 4))
 X_train = vectorizer.fit_transform(train_df['Text'])
 X_val = vectorizer.transform(val_df['Text'])
 
-
+# Linear classifier that usesStochastic Gradient Descent (SGD)
 clf = SGDClassifier(loss='log_loss', max_iter=1000, n_jobs=-1)
 clf.fit(X_train, train_df['Label'])
 
 
-# Prédiction sur l'ensemble de validation
+# Prediction on validation set
 y_pred = clf.predict(X_val)
 accuracy = accuracy_score(val_df['Label'], y_pred)
 print("Accuracy sur le set de validation:", accuracy)

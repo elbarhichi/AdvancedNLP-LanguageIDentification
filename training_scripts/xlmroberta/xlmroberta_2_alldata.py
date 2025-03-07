@@ -2,49 +2,41 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 import numpy as np
 from sklearn.metrics import accuracy_score
-
-# Importation des modules de Hugging Face
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, TrainingArguments, Trainer
 from datasets import Dataset
 
-# 1. Chargement du CSV
+
 df = pd.read_csv('data/train_submission_cleaned.csv')
 
-# 2. Remapper les labels en entiers
 labels = sorted(df['Label'].unique())
 label2id = {label: i for i, label in enumerate(labels)}
 id2label = {i: label for i, label in enumerate(labels)}
 df['label_id'] = df['Label'].map(label2id)
 
-# 3. Séparation en train/validation (stratifiée)
+# Test / Train split
 train_df, val_df = train_test_split(df, test_size=0.02, stratify=df['label_id'], random_state=42)
 
-# 4. Création de datasets Hugging Face à partir de Pandas
-# Après avoir créé les datasets Hugging Face
 train_dataset = Dataset.from_pandas(train_df[['Text', 'label_id']].rename(columns={"Text": "text"}))
 val_dataset = Dataset.from_pandas(val_df[['Text', 'label_id']].rename(columns={"Text": "text"}))
 
-# Renommer la colonne "label_id" en "labels"
 train_dataset = train_dataset.rename_column("label_id", "labels")
 val_dataset = val_dataset.rename_column("label_id", "labels")
 
-# 5. Chargement du tokenizer de XLM-Roberta (base)
+# Load Tokenizer
 model_checkpoint = "xlm-roberta-base"
 tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
 
-# 6. Définir une fonction de tokenization
 def tokenize_function(example):
     return tokenizer(example["text"], truncation=True, padding="max_length", max_length=128)
 
-# Appliquer la tokenisation sur les datasets
 train_dataset = train_dataset.map(tokenize_function, batched=True)
 val_dataset = val_dataset.map(tokenize_function, batched=True)
 
-# 7. Spécifier les colonnes à utiliser pour l'entraînement en format PyTorch
+
 train_dataset.set_format(type="torch", columns=["input_ids", "attention_mask", "labels"])
 val_dataset.set_format(type="torch", columns=["input_ids", "attention_mask", "labels"])
 
-# 8. Charger le modèle pré-entraîné pour la classification
+# Load classifier
 num_labels = len(labels)
 model = AutoModelForSequenceClassification.from_pretrained(
     model_checkpoint,
@@ -53,13 +45,13 @@ model = AutoModelForSequenceClassification.from_pretrained(
     label2id=label2id
 )
 
-# 9. Définir une fonction pour calculer l'accuracy
+# Accuracy
 def compute_metrics(eval_pred):
     logits, labels = eval_pred
     predictions = np.argmax(logits, axis=-1)
     return {"accuracy": accuracy_score(labels, predictions)}
 
-# 10. Configurer les arguments d'entraînement
+# Training set up
 training_args = TrainingArguments(
     output_dir="./results_xlmroberta_2_all",
     evaluation_strategy="epoch",
@@ -78,7 +70,7 @@ training_args = TrainingArguments(
     metric_for_best_model="accuracy"
 )
 
-# 11. Créer l'objet Trainer
+# Training
 trainer = Trainer(
     model=model,
     args=training_args,
@@ -87,14 +79,12 @@ trainer = Trainer(
     tokenizer=tokenizer,
     compute_metrics=compute_metrics
 )
-
-# 12. Lancer l'entraînement
 trainer.train()
 
-# 13. Évaluer le modèle sur le set de validation
+# Evaluation
 eval_result = trainer.evaluate()
 print("Résultats de l'évaluation :", eval_result)
 
-# 14. Sauvegarder le modèle et le tokenizer pour une utilisation ultérieure
+# Save model and tokenizer
 model.save_pretrained("./xlmroberta_language_classifier_2_all")
 tokenizer.save_pretrained("./xlmroberta_language_classifier_2_all")

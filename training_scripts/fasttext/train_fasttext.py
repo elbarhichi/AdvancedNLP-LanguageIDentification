@@ -5,13 +5,12 @@ import numpy as np
 import os
 import itertools
 
-# 1. Charger le jeu d'entraînement
+
 df = pd.read_csv('data/train_submission_cleaned.csv')
-# S'assurer que les colonnes sont bien des chaînes de caractères
 df['Text'] = df['Text'].astype(str)
 df['Label'] = df['Label'].astype(str)
 
-# 2. Fonction pour convertir le DataFrame en format fastText
+# Convert the dataframe to a format fastText
 def create_fasttext_file(df, file_path):
     with open(file_path, 'w', encoding='utf-8') as f:
         for _, row in df.iterrows():
@@ -20,7 +19,7 @@ def create_fasttext_file(df, file_path):
             # Format fastText : __label__<label> <text>
             f.write(f"__label__{label} {text}\n")
 
-# 3. Définir la grille d'hyperparamètres à tester
+# Define hyperparameter grid
 param_grid = {
     'lr': [0.3, 0.5],
     'epoch': [25, 50, 75],
@@ -28,26 +27,26 @@ param_grid = {
     'dim': [100]
 }
 
-# 4. Créer un objet StratifiedKFold pour une validation croisée stratifiée à 3 plis (par exemple)
+# Cross Validation
 skf = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
 
 print("Nombre d'exemples dans le dataset:", len(df))
 
-# 5. Fonction d'évaluation pour une configuration donnée
+# Evaluation function
 def evaluate_params(params, df):
     accuracies = []
     fold = 1
-    # Utiliser la colonne 'Label' pour la stratification
+
     for train_index, val_index in skf.split(df, df['Label']):
         train_df = df.iloc[train_index]
         val_df = df.iloc[val_index]
-        # Créer des noms de fichiers uniques en incorporant les paramètres et le numéro de pli
+
         train_file = f"temp_train_fold{fold}_lr{params['lr']}_epoch{params['epoch']}_w{params['wordNgrams']}_dim{params['dim']}.txt"
         val_file = f"temp_val_fold{fold}_lr{params['lr']}_epoch{params['epoch']}_w{params['wordNgrams']}_dim{params['dim']}.txt"
         create_fasttext_file(train_df, train_file)
         create_fasttext_file(val_df, val_file)
         print(f"Evaluating fold {fold} with parameters {params} using files:\n  {train_file}\n  {val_file}")
-        # Entraîner le modèle avec la configuration actuelle
+        # Training
         model = fasttext.train_supervised(
             input=train_file,
             lr=params['lr'],
@@ -58,17 +57,16 @@ def evaluate_params(params, df):
             loss='softmax'
         )
         print("Model trained.")
-        # Tester sur le fichier de validation (resultat: (nb_exemples, precision, recall))
+        # Testing
         result = model.test(val_file)
-        accuracy = result[1]  # On considère la précision comme l'accuracy
+        accuracy = result[1] 
         print(f"Fold {fold} accuracy: {accuracy}")
         accuracies.append(accuracy)
         
-        # Note : On ne supprime pas les fichiers, ils restent pour vérification.
         fold += 1
     return np.mean(accuracies)
 
-# 6. Recherche par grille
+# Grid Search
 best_params = None
 best_accuracy = 0
 results = []
@@ -88,7 +86,7 @@ for lr, epoch, wordNgrams, dim in itertools.product(param_grid['lr'],
 
 print("Best parameters found:", best_params, "with accuracy:", best_accuracy)
 
-# 7. Entraîner le modèle final sur l'ensemble complet avec la meilleure configuration
+# Train the final model on the hole dataset
 train_file_full = "fasttext_train_full.txt"
 create_fasttext_file(df, train_file_full)
 
@@ -102,6 +100,6 @@ final_model = fasttext.train_supervised(
     loss='softmax'
 )
 
-# 8. Sauvegarder le modèle final
+# Save final model
 final_model.save_model("fasttext_language_classifier_best.bin")
 print("Final model saved with best parameters.")
